@@ -503,6 +503,29 @@ const hideHighlightMenu = () => {
   highlightMenu.setAttribute("aria-hidden", "true");
 };
 
+const syncDraggableItems = () => {
+  const usedByGroup = new Map();
+  document.querySelectorAll(".drop-slot").forEach((slot) => {
+    const group = slot.dataset.group || "";
+    const value = slot.dataset.value;
+    if (!group || !value) return;
+    if (!usedByGroup.has(group)) usedByGroup.set(group, new Set());
+    usedByGroup.get(group).add(value);
+  });
+
+  document.querySelectorAll(".draggable-item").forEach((item) => {
+    const group = item.dataset.group || "";
+    const value = item.dataset.value || item.textContent.trim();
+    const used = usedByGroup.get(group)?.has(value);
+    item.hidden = Boolean(used);
+    if (used) {
+      item.setAttribute("aria-hidden", "true");
+    } else {
+      item.removeAttribute("aria-hidden");
+    }
+  });
+};
+
 const setDropSlotValue = (slot, value, label) => {
   const textEl = slot.querySelector(".slot-text");
   const placeholder = slot.dataset.placeholder || "Drop here";
@@ -559,6 +582,7 @@ const setupDropSlots = () => {
         if (sourceSlot) setDropSlotValue(sourceSlot, "");
       }
       setDropSlotValue(slot, value, label);
+      syncDraggableItems();
       updateProgress();
       currentQuestion = Number(slot.dataset.question) || currentQuestion;
     });
@@ -566,9 +590,11 @@ const setupDropSlots = () => {
     slot.addEventListener("dblclick", () => {
       if (hasChecked) return;
       setDropSlotValue(slot, "");
+      syncDraggableItems();
       updateProgress();
     });
   });
+  syncDraggableItems();
 };
 
 const setupDraggableItems = () => {
